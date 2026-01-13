@@ -44,6 +44,18 @@ int main(int argc, char **argv) {
     forward(drop(reset(forward(forward(reset(nullptr))))));
     problems[1] = std::move(RECORDS);
 
+    /**
+    测试用例 3：drop(drop(reset(drop(reset(reset(nullptr))))))
+    执行流程：
+        最内层reset(nullptr)：创建Resource A（无记录），返回A。
+        reset(A)：A记录 'r'（_records = "r"），创建Resource B，A被销毁（RECORDS暂存 "r"），返回B。
+        drop(B)：B记录 'd'（_records = "d"），B被销毁（RECORDS暂存 "r", "d"），返回nullptr。
+        reset(nullptr)：创建Resource C（无记录），返回C。
+        drop(C)：C记录 'd'（_records = "d"），C被销毁（RECORDS暂存 "r", "d", "d"），返回nullptr。
+        外层drop(nullptr)：无操作。
+    problems[2]结果：
+        因多对象析构顺序差异，macOS 和 Ubuntu 下为{"d", "d", "r"}。
+     */
     drop(drop(reset(drop(reset(reset(nullptr))))));
     problems[2] = std::move(RECORDS);
 
@@ -51,10 +63,8 @@ int main(int argc, char **argv) {
 
     std::vector<const char *> answers[]{
         {"fd"},
-        // TODO: 分析 problems[1] 中资源的生命周期，将记录填入 `std::vector`
-        // NOTICE: 此题结果依赖对象析构逻辑，平台相关，提交时以 CI 实际运行平台为准
-        {"", "", "", "", "", "", "", ""},
-        {"", "", "", "", "", "", "", ""},
+        {"d", "ffr"},
+        {"d", "d", "r"}
     };
 
     // ---- 不要修改以下代码 ----
